@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 8 8%27 shape-rendering=%27crispEdges%27%3E%3Crect width=%278%27 height=%278%27 fill=%27%230a1220%27/%3E%3Crect x=%272%27 y=%271%27 width=%274%27 height=%271%27 fill=%27%23ffcb05%27/%3E%3Crect x=%271%27 y=%272%27 width=%271%27 height=%274%27 fill=%27%23ffcb05%27/%3E%3Crect x=%272%27 y=%276%27 width=%274%27 height=%271%27 fill=%27%23ffcb05%27/%3E%3C/svg%3E">
+  <title>CIMS Lab: the game</title>
+  <meta name="description" content="CIMS Lab, Connected and Intelligent Manufacturing Systems, University of Michigan. A walkable pixel lab.">
+  <script type="module" crossorigin src="/cims-lab-site/assets/game-KiIq2W-h.js"></script>
+  <link rel="modulepreload" crossorigin href="/cims-lab-site/assets/content-awJwBrYL.js">
+  <link rel="stylesheet" crossorigin href="/cims-lab-site/assets/game-oVggXM1G.css">
+</head>
+<body>
+  <!-- Covers the page while the game loads, then fades. You arrive here through the portal on the front page. -->
+  <div class="arrive" aria-hidden="true"><span>Loading the lab</span></div>
+  <!-- Controls, always visible in a column beside the game on a desktop. Filled from content/text.json. -->
+  <aside class="side" id="side" aria-labelledby="side-title">
+    <h2 id="side-title"></h2>
+    <dl id="side-list"></dl>
+  </aside>
+
+  <div class="app" id="app">
+    <!-- The game canvas. Everything you can read in the game is real text in the elements below. -->
+    <div class="game" id="game" tabindex="-1" aria-label="Game view"></div>
+    <p class="sr-only" id="live" aria-live="polite"></p>
+
+    <!-- Top-left HUD: artifact count (opens the collection) and the mute toggle, which is always visible. -->
+    <div class="hud" id="hud">
+      <button class="hud-count" id="hud-codex" type="button" aria-keyshortcuts="C" hidden>
+        <span>Artifacts</span> <span id="hud-n">0</span>/<span id="hud-total">19</span>
+      </button>
+      <button class="hud-mute" id="hud-mute" type="button" aria-pressed="false" aria-keyshortcuts="V">
+        <svg class="spk" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" focusable="false"><path d="M3 7h3l4-4v14l-4-4H3z" fill="currentColor"/><g class="spk-off" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M13 7.5l5 5M18 7.5l-5 5"/></g><g class="spk-on" fill="currentColor"><path d="M13 7h2v6h-2zM16 5h2v10h-2z"/></g></svg>
+        <span class="sr-only" id="hud-mute-label">Sound off</span>
+      </button>
+    </div>
+
+    <!-- The current goal, under the artifact count. -->
+    <p class="quest" id="quest" hidden></p>
+
+    <!-- One line about the room, for three seconds each time you walk in. -->
+    <p class="banner panel" id="banner" role="status" hidden></p>
+
+    <!-- Names floating over people and over things you are standing near. Positioned by the game. -->
+    <div class="labels" id="labels" aria-hidden="true"></div>
+
+    <!-- Always-visible menu keys. Each is also a button. -->
+    <nav class="keybar" id="keybar" aria-label="Menus" hidden></nav>
+
+    <p class="dev-warn" id="dev-warn" hidden></p>
+
+    <p class="prompt" id="prompt" hidden>[<kbd id="prompt-key">E</kbd>] <span id="prompt-text">Inspect</span></p>
+
+    <!-- A line shown while you stand in front of something, without stopping play (the Empty Room doorways). -->
+    <p class="caption panel" id="caption" role="status" hidden></p>
+
+    <div class="dialogue panel" id="dialogue" hidden>
+      <p class="who" id="dialogue-who" aria-hidden="true" hidden></p>
+      <p id="dialogue-text" aria-hidden="true"></p>
+      <span class="more" aria-hidden="true"><i></i><kbd id="more-key">E</kbd></span>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+
+    <!-- Phone controls: d-pad and A button. -->
+    <div class="touch" id="touch" hidden>
+      <div class="dpad" role="group" aria-label="Walk">
+        <button type="button" data-dir="up" class="d-up" aria-label="Walk up"></button>
+        <button type="button" data-dir="left" class="d-left" aria-label="Walk left"></button>
+        <button type="button" data-dir="right" class="d-right" aria-label="Walk right"></button>
+        <button type="button" data-dir="down" class="d-down" aria-label="Walk down"></button>
+        <span class="t-label" id="touch-move" aria-hidden="true"></span>
+      </div>
+      <div class="a-wrap">
+        <button type="button" class="a-btn" data-action="interact" aria-label="Interact">A</button>
+        <span class="t-label" id="touch-interact" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <!-- Title screen -->
+    <section class="title" id="title" aria-labelledby="title-name">
+      <h1 id="title-name">CIMS Lab</h1>
+      <p class="subtitle" id="title-sub">Connected and Intelligent Manufacturing Systems · University of Michigan</p>
+      <button class="start" id="start" type="button">Start your journey</button>
+      <p class="controls" id="title-controls">WASD or arrows: move · E: interact · C: collection · Esc: close</p>
+      <a class="skip" id="skip" href="./">back to the lab site</a>
+    </section>
+
+    <!-- Artifact card -->
+    <dialog class="card panel" id="card" aria-labelledby="card-name">
+      <p class="rarity" id="card-rarity"></p>
+      <div class="card-head">
+        <img class="icon" id="card-icon" alt="" width="96" height="64">
+        <div>
+          <p class="fig" id="card-fig"></p>
+          <h2 id="card-name"></h2>
+        </div>
+      </div>
+      <p class="lore" id="card-lore"></p>
+      <ul class="stats" id="card-stats"></ul>
+      <p class="credit" id="card-credit"></p>
+      <p class="link"><a id="card-link" target="_blank" rel="noopener noreferrer"></a></p>
+      <form method="dialog"><button class="close" type="submit" autofocus>Close</button></form>
+    </dialog>
+
+    <!-- The collection (called the codex in the code): artifacts found, and achievements -->
+    <dialog class="codex panel" id="codex" aria-labelledby="codex-title">
+      <h2 id="codex-title">Collection</h2>
+      <div class="tabs" role="tablist" aria-label="Collection sections">
+        <button role="tab" id="tab-artifacts" type="button" aria-controls="panel-artifacts" aria-selected="true"></button>
+        <button role="tab" id="tab-achievements" type="button" aria-controls="panel-achievements" aria-selected="false" tabindex="-1"></button>
+        <button role="tab" id="tab-went" type="button" aria-controls="panel-went" aria-selected="false" tabindex="-1"></button>
+        <button role="tab" id="tab-next" type="button" aria-controls="panel-next" aria-selected="false" tabindex="-1"></button>
+      </div>
+      <div role="tabpanel" id="panel-artifacts" aria-labelledby="tab-artifacts"></div>
+      <div role="tabpanel" id="panel-achievements" aria-labelledby="tab-achievements" hidden></div>
+      <div role="tabpanel" id="panel-went" aria-labelledby="tab-went" hidden></div>
+      <div role="tabpanel" id="panel-next" aria-labelledby="tab-next" hidden></div>
+      <form method="dialog"><button class="close" type="submit">Close</button></form>
+    </dialog>
+
+    <!-- The Join Us portal: how to apply, then the credits -->
+    <dialog class="join panel" id="join" aria-labelledby="join-title">
+      <h2 id="join-title"></h2>
+      <section class="join-panel">
+        <p id="join-students"></p>
+      </section>
+      <section class="credits" id="credits" tabindex="0" aria-labelledby="credits-title">
+        <h3 id="credits-title"></h3>
+        <div id="credits-body"></div>
+      </section>
+      <form method="dialog"><button class="close" type="submit" autofocus>Close</button></form>
+    </dialog>
+
+    <!-- People: everyone on the roster, by role, with the room they are in -->
+    <dialog class="people panel" id="people" aria-labelledby="people-title">
+      <h2 id="people-title"></h2>
+      <p class="confirm" id="people-tag"></p>
+      <div id="people-body"></div>
+      <form method="dialog"><button class="close" type="submit" autofocus>Close</button></form>
+    </dialog>
+
+    <!-- A plain list: the honors wall -->
+    <dialog class="list panel" id="list" aria-labelledby="list-title">
+      <h2 id="list-title"></h2>
+      <ul id="list-items"></ul>
+      <form method="dialog"><button class="close" type="submit" autofocus>Close</button></form>
+    </dialog>
+
+    <!-- Map: every room, where you are, what is in each -->
+    <dialog class="map panel" id="map" aria-labelledby="map-title">
+      <h2 id="map-title">Map</h2>
+      <ol class="map-grid" id="map-grid"></ol>
+      <form method="dialog"><button class="close" type="submit" autofocus>Close</button></form>
+    </dialog>
+  </div>
+</body>
+</html>
